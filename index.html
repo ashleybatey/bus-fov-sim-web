@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>School Bus Camera FOV Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <h1>Bus Camera FOV Simulator</h1>
+            <p class="subtitle">Place cameras · tune H/V FOV · check student coverage</p>
+          </div>
+        </div>
+        <div class="coverage-pill" id="coverageSummary">
+          <span class="coverage-label">Seat coverage</span>
+          <span class="coverage-value" id="coverageValue">—</span>
+        </div>
+      </header>
+
+      <aside class="controls">
+        <section class="control-block">
+          <h2>Bus body</h2>
+          <div class="bus-type-grid" role="radiogroup" aria-label="Bus body type" id="busTypeGrid">
+            <label class="bus-type">
+              <input type="radio" name="busType" value="A" checked />
+              <span class="bus-type-copy">
+                <span class="bus-type-id">Type A</span>
+                <span class="bus-type-meta">20–25 ft · 10–30</span>
+              </span>
+            </label>
+            <label class="bus-type">
+              <input type="radio" name="busType" value="B" />
+              <span class="bus-type-copy">
+                <span class="bus-type-id">Type B</span>
+                <span class="bus-type-meta">25–30 ft · 10–36+</span>
+              </span>
+            </label>
+            <label class="bus-type">
+              <input type="radio" name="busType" value="C" />
+              <span class="bus-type-copy">
+                <span class="bus-type-id">Type C</span>
+                <span class="bus-type-meta">29–38 ft · 36–78</span>
+              </span>
+            </label>
+            <label class="bus-type">
+              <input type="radio" name="busType" value="D" />
+              <span class="bus-type-copy">
+                <span class="bus-type-id">Type D</span>
+                <span class="bus-type-meta">35–45 ft · 72–90</span>
+              </span>
+            </label>
+          </div>
+          <p class="hint" id="busHint"></p>
+        </section>
+
+        <section class="control-block">
+          <h2>Cameras</h2>
+          <div class="field">
+            <span>Count</span>
+            <div class="segmented" role="group" aria-label="Camera count">
+              <button type="button" class="seg" data-count="2">2</button>
+              <button type="button" class="seg active" data-count="3">3</button>
+              <button type="button" class="seg" data-count="4">4</button>
+            </div>
+          </div>
+
+          <label class="field">
+            <span>Selected camera</span>
+            <select id="cameraSelect"></select>
+          </label>
+
+          <label class="check-field">
+            <input id="applyToAll" type="checkbox" />
+            <span>Apply to all cameras</span>
+          </label>
+
+          <label class="field">
+            <span>Horizontal FOV <output id="hfovOut">90°</output></span>
+            <input id="hfov" type="range" min="40" max="180" step="1" value="90" />
+          </label>
+
+          <label class="field">
+            <span>Vertical FOV <output id="vfovOut">60°</output></span>
+            <input id="vfov" type="range" min="30" max="120" step="1" value="60" />
+          </label>
+
+          <label class="field">
+            <span>Mount height <output id="heightOut">7.0 ft</output></span>
+            <input id="mountHeight" type="range" min="5" max="8" step="0.1" value="7" />
+          </label>
+
+          <label class="field">
+            <span>Yaw (along wall) <output id="yawOut">0°</output></span>
+            <input id="yaw" type="range" min="-60" max="60" step="1" value="0" />
+          </label>
+
+          <label class="field">
+            <span>Pitch (tilt down) <output id="pitchOut">20°</output></span>
+            <input id="pitch" type="range" min="0" max="60" step="1" value="20" />
+          </label>
+
+          <div class="wall-hint">
+            Drag a camera along a wall in the top-down view. Click a camera to select it.
+          </div>
+        </section>
+
+        <section class="control-block legend-block">
+          <h2>Legend</h2>
+          <ul class="legend">
+            <li><span class="swatch seat"></span> Seat / student zone</li>
+            <li><span class="swatch covered"></span> Covered by ≥1 camera</li>
+            <li><span class="swatch uncovered"></span> Not covered</li>
+            <li><span class="swatch fov-multi"></span> FOV cones (unique color per camera)</li>
+            <li><span class="swatch door"></span> Entrance door</li>
+          </ul>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <section class="view-panel">
+          <div class="view-header">
+            <h2>Top-down · horizontal FOV</h2>
+            <span class="view-note">Front ← · Rear → · Wall-mounted cameras</span>
+          </div>
+          <canvas id="topDown" width="1100" height="420"></canvas>
+        </section>
+
+        <section class="view-panel">
+          <div class="view-header">
+            <h2>3D cabin · orbit view</h2>
+            <span class="view-note">Drag to orbit · scroll to zoom · right-drag to pan</span>
+          </div>
+          <canvas id="sideView" class="view-3d" width="1100" height="420"></canvas>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,9 @@
+[build]
+  publish = "."
+  # Static site — no build step
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Allow ES modules / Three.js CDN imports
+    Cross-Origin-Embedder-Policy = "unsafe-none"
